@@ -146,4 +146,18 @@ module.exports = {
       throw error;
     }
   },
+
+    /**
+   * Removes a key from the cache
+   *
+   * @returns {number} 1 when deleted
+   */
+  async deleteCacheEntry(key) {
+    try {
+      return Cache.del(key);
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  },
 };

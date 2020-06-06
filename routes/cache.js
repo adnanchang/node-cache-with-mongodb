@@ -12,7 +12,7 @@ router.get("/", async (req, res, next) => {
 
 /* GET cache item with a key */
 router.get("/item/:key", async (req, res, next) => {
-  // Return if ID not provided
+  // Return if key not provided
   if (!req.params.key) {
     res.status(400).send("A key is required to fetch an item's data");
   }
@@ -27,6 +27,18 @@ router.delete("/", async (req, res, next) => {
   const result = await cacheController.clearCache();
 
   res.status(200).send(`Cache was cleared, ${result} items deleted`);
+});
+
+/* GET cache item with a key */
+router.delete("/item/:key", async (req, res, next) => {
+  // Return if key not provided
+  if (!req.params.key) {
+    res.status(400).send("A key is required to fetch an item's data");
+  }
+
+  await cacheController.deleteCacheEntry(req.params.key);
+
+  res.status(200).send(`Cache item was deleted`);
 });
 
 module.exports = router;
