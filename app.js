@@ -3,11 +3,13 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var database = require('./middleware/dbConnect')
 
 var indexRouter = require('./routes/index');
+var cacheRouter = require('./routes/cache')
 
 var app = express();
-var port = 3000;
+const port = 3000;
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -19,12 +21,13 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// start the server
+// Start the server
 app.listen(port, function() {
-  console.log('app started');
+  console.log(`App is started on port: ${port}`);
 });
 
 app.use('/', indexRouter);
+app.use('/cache', cacheRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

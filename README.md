@@ -11,3 +11,7 @@ npm install
 # serve with hot reload at localhost:8080
 npm start
 ```
+
+## Database Setup
+
+Just make sure you have a running MongoDB instance on port `27017` or just change the port to a desired value in `middleware/dbConnect.js`
