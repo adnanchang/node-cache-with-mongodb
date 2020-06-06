@@ -68,6 +68,9 @@ module.exports = {
         }
       } else {
         console.log("Cache hit");
+
+        // Reset TTL
+        Cache.ttl(key);
       }
 
       return {
@@ -80,6 +83,12 @@ module.exports = {
     }
   },
 
+  /**
+   * Updates the database at the given key
+   * with a new random string
+   * 
+   * @param {string} key The key to update 
+   */
   async updateEntry(key) {
     try {
       const randomString = uniqueNamesGenerator({
