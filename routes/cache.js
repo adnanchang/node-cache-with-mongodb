@@ -5,9 +5,14 @@ const cacheController = require("../controller/cache");
 
 /* GET all cache items */
 router.get("/", async (req, res, next) => {
-  const result = await cacheController.getAll();
+  try {
+    const result = await cacheController.getAll();
 
-  res.send(result);
+    res.send(result);
+  } catch (error) {
+    res.status(400).send("Whoops! Could not retrieve the entries. Try again");
+  }
+
 });
 
 /* GET cache item with a key */
@@ -22,7 +27,7 @@ router.get("/item/:key", async (req, res, next) => {
 
     res.send(result);
   } catch (error) {
-    res.status(400).send("Cache is full. Please clear or delete something");
+    res.status(400).send("Whoops! Could not get the given key. Try again");
   }
 });
 
