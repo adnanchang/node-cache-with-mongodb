@@ -5,7 +5,7 @@ const NodeCache = require("node-cache");
 const cacheController = require("../controller/cache");
 
 const theCache = new NodeCache({
-  stdTTL: 120,
+  stdTTL: 10,
   maxKeys: 2,
   deleteOnExpire: false,
 });

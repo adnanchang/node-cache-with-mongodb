@@ -1,8 +1,9 @@
 /**
  * Controller for the "Cache"
  */
-let Cache = require("../middleware/cache");
-let CacheDB = require("../models/cache");
+const Cache = require("../middleware/cache");
+const CacheDB = require("../models/cache");
+const dateFNS = require('date-fns');
 
 const {
   uniqueNamesGenerator,
@@ -68,7 +69,16 @@ module.exports = {
         }
       } else {
         console.log("Cache hit");
+        
+        // Check if entry has expired
+        const TTL = dateFNS.toDate(Cache.getTtl(key));
 
+        if (dateFNS.isBefore(TTL, new Date())) {
+          console.log("Entry expired, regenerating")
+          const { data: updatedData } = await this.updateEntry(key);
+          data = updatedData;
+        }
+        
         // Reset TTL
         Cache.ttl(key);
       }
@@ -85,7 +95,8 @@ module.exports = {
 
   /**
    * Updates the database at the given key
-   * with a new random string
+   * with a new random string and
+   * updates the TTL 
    * 
    * @param {string} key The key to update 
    */
@@ -110,6 +121,9 @@ module.exports = {
   
       // Set the cache with the newly generated key
       data = this.set(key, randomString);
+
+      // Reset TTL
+      Cache.ttl(key);
   
       return {
         key,
