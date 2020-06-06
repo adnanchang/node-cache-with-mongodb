@@ -3,7 +3,7 @@
  */
 const Cache = require("../middleware/cache");
 const CacheDB = require("../models/cache");
-const dateFNS = require('date-fns');
+const dateFNS = require("date-fns");
 
 const {
   uniqueNamesGenerator,
@@ -16,7 +16,7 @@ module.exports = {
   /**
    * Gets all data inside the cache
    *
-   * @returns {Object} Containing objects as <key, data> pair
+   * @returns {Object} Containing data as <key, data>
    */
   async getAll() {
     try {
@@ -54,6 +54,7 @@ module.exports = {
           console.log("Found in DB");
           // Set the cache with data found in DB
           data = this.set(key, found.data);
+          console.log(data)
         } else {
           console.log("Key does not exist in DB.. Generating a new one");
           // Generate new entry since key does not exist
@@ -69,16 +70,14 @@ module.exports = {
         }
       } else {
         console.log("Cache hit");
-        
-        // Check if entry has expired
-        const TTL = dateFNS.toDate(Cache.getTtl(key));
 
-        if (dateFNS.isBefore(TTL, new Date())) {
-          console.log("Entry expired, regenerating")
+        // Check for expiry
+        if (this.isEntryExpired(key)) {
+          console.log("Entry expired, regenerating");
           const { data: updatedData } = await this.updateEntry(key);
           data = updatedData;
         }
-        
+
         // Reset TTL
         Cache.ttl(key);
       }
@@ -96,42 +95,42 @@ module.exports = {
   /**
    * Updates the database at the given key
    * with a new random string and
-   * updates the TTL 
-   * 
-   * @param {string} key The key to update 
+   * updates the TTL
+   *
+   * @param {string} key The key to update
    */
   async updateEntry(key) {
     try {
       const randomString = uniqueNamesGenerator({
         dictionaries: [adjectives, colors, animals],
       });
-  
+
       // Update key in the database
       const { nModified } = await CacheDB.updateOne(
         { key },
         {
           $set: {
-            data: randomString
-          }
+            data: randomString,
+          },
         }
       );
 
       // Break operation if database wasnt updated
-      if (nModified === 0) throw new Error('Update failed')
-  
+      if (nModified === 0) throw new Error("Update failed");
+
       // Set the cache with the newly generated key
       data = this.set(key, randomString);
 
       // Reset TTL
       Cache.ttl(key);
-  
+
       return {
         key,
-        data
-      }
+        data,
+      };
     } catch (error) {
       console.log(error);
-      throw error; 
+      throw error;
     }
   },
 
@@ -142,8 +141,8 @@ module.exports = {
    * @param {string} key
    * @param {string} data
    *
-   * @returns {boolean} Only returns true
-   * when cache was set
+   * @returns {string} The data passed
+   * in the function
    */
   set(key, data) {
     try {
@@ -156,7 +155,8 @@ module.exports = {
     } catch (error) {
       // When cache is full
       if (error.name === "ECACHEFULL") {
-        this.overWriteEntry();
+        console.log('Cache is full, overwriting an entry');
+        return this.overWriteEntry(key, data);
       }
 
       console.log(error);
@@ -221,7 +221,80 @@ module.exports = {
     }
   },
 
-  async overWriteEntry(key) {
-    console.log("I am so good");
+  /**
+   * Overwrites a key in the cache
+   * to make space for the new given
+   * key
+   * 
+   * Checks for the following:
+   * 
+   * 1. If an expired key exists in the cache,
+   * it is removed and the new key is added
+   * 
+   * 2. If no key is expired then the very first
+   * key in the entry is removed and replaced
+   * 
+   * @param {string} key The new key
+   * that will over write one of the
+   * keys in the cache 
+   * @param {string} data The data
+   * that belongs to the given key
+   */
+  overWriteEntry(key, data) {
+    try {       
+      const keys = Cache.keys();
+
+      let result = null;
+      let isEntryOverwritten = false;
+      keys.every((singleKey) => {
+        if (this.isEntryExpired(singleKey)) {
+          // delete expired key
+          this.deleteCacheEntry(singleKey);
+
+          // set the key that is new
+          result = this.set(key, data);
+          isEntryOverwritten = true;
+
+          // stop looping the keys
+          return false;
+        }
+
+        // continue looping
+        return true;
+      });
+
+      if (!isEntryOverwritten) {
+        this.deleteCacheEntry(keys[0]);
+
+        result = this.set(key, data);
+      }
+
+      return result;
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
+  },
+
+  /**
+   * Indicates whether key is
+   * expired or not
+   * 
+   * @param {string} key Key to check
+   * expiry for 
+   * 
+   * @returns {boolean} true if
+   * key is expired
+   */
+  isEntryExpired(key) {
+    try {
+      // Check if entry has expired
+      const TTL = dateFNS.toDate(Cache.getTtl(key));
+
+      return dateFNS.isBefore(TTL, new Date)
+    } catch (error) {
+      console.log(error);
+      throw error;
+    }
   },
 };
