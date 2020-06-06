@@ -50,11 +50,11 @@ module.exports = {
         const found = await CacheDB.findOne({ key });
 
         if (found) {
-          console.log('Found in DB')
+          console.log("Found in DB");
           // Set the cache with data found in DB
           data = this.set(key, found.data);
         } else {
-          console.log('Key does not exist in DB.. Generating a new one')
+          console.log("Key does not exist in DB.. Generating a new one");
           // Generate new entry since key does not exist
           const randomString = uniqueNamesGenerator({
             dictionaries: [adjectives, colors, animals],
@@ -80,6 +80,38 @@ module.exports = {
     }
   },
 
+  async updateEntry(key) {
+    try {
+      const randomString = uniqueNamesGenerator({
+        dictionaries: [adjectives, colors, animals],
+      });
+  
+      // Update key in the database
+      const { nModified } = await CacheDB.updateOne(
+        { key },
+        {
+          $set: {
+            data: randomString
+          }
+        }
+      );
+
+      // Break operation if database wasnt updated
+      if (nModified === 0) throw new Error('Update failed')
+  
+      // Set the cache with the newly generated key
+      data = this.set(key, randomString);
+  
+      return {
+        key,
+        data
+      }
+    } catch (error) {
+      console.log(error);
+      throw error; 
+    }
+  },
+
   /**
    * Saves random data for
    * given key in the Cache
@@ -99,6 +131,11 @@ module.exports = {
 
       return data;
     } catch (error) {
+      // When cache is full
+      if (error.name === "ECACHEFULL") {
+        this.overWriteEntry();
+      }
+
       console.log(error);
       throw error;
     }
@@ -147,7 +184,7 @@ module.exports = {
     }
   },
 
-    /**
+  /**
    * Removes a key from the cache
    *
    * @returns {number} 1 when deleted
@@ -159,5 +196,9 @@ module.exports = {
       console.log(error);
       throw error;
     }
+  },
+
+  async overWriteEntry(key) {
+    console.log("I am so good");
   },
 };
