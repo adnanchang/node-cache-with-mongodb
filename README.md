@@ -1,6 +1,6 @@
 # Fashion Cloud Test    
 
-> A NodeJS/Express App to possibly woo the folks at Fashion Cloud
+> A NodeJS/Express App with `node-cache` as temporary storage with mongoDB at the back
 
 ## Build Setup
 
